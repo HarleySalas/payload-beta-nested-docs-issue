@@ -17,12 +17,12 @@ export default buildConfig({
   editor: lexicalEditor(),
   collections: [User, Page],
   plugins: [
-    nestedDocs({
-      collections: ['page'],
-      generateLabel: (_, doc) => doc?.title as string,
-      generateURL: (docs) =>
-        docs.reduce((url, doc) => `${url}/${doc.slug}`.replace(/^\/+/, '/'), ''),
-    }),
+    // nestedDocs({
+    //   collections: ['page'],
+    //   generateLabel: (_, doc) => doc?.title as string,
+    //   generateURL: (docs) =>
+    //     docs.reduce((url, doc) => `${url}/${doc.slug}`.replace(/^\/+/, '/'), ''),
+    // }),
   ],
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
