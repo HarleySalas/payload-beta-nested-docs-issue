@@ -1,84 +1,37 @@
 import path from 'path'
-// import { postgresAdapter } from '@payloadcms/db-postgres'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { en } from 'payload/i18n/en'
-import {
-  AlignFeature,
-  BlockQuoteFeature,
-  BlocksFeature,
-  BoldFeature,
-  CheckListFeature,
-  HeadingFeature,
-  IndentFeature,
-  InlineCodeFeature,
-  ItalicFeature,
-  lexicalEditor,
-  LinkFeature,
-  OrderedListFeature,
-  ParagraphFeature,
-  RelationshipFeature,
-  UnorderedListFeature,
-  UploadFeature,
-} from '@payloadcms/richtext-lexical'
-//import { slateEditor } from '@payloadcms/richtext-slate'
-import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload/config'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
+import { Page } from '@/payload/collections/Page'
+import { User } from '@/payload/collections/user'
+import { COLLECTION_SLUG_USER } from '@/payload/collections/user/User'
+import { nestedDocs } from '@payloadcms/plugin-nested-docs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
-  //editor: slateEditor({}),
   editor: lexicalEditor(),
-  collections: [
-    {
-      slug: 'users',
-      auth: true,
-      access: {
-        delete: () => false,
-        update: () => false,
-      },
-      fields: [],
-    },
-    {
-      slug: 'pages',
-      admin: {
-        useAsTitle: 'title',
-      },
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-        },
-        {
-          name: 'content',
-          type: 'richText',
-        },
-      ],
-    },
-    {
-      slug: 'media',
-      upload: true,
-      fields: [
-        {
-          name: 'text',
-          type: 'text',
-        },
-      ],
-    },
+  collections: [User, Page],
+  plugins: [
+    nestedDocs({
+      collections: ['page'],
+      generateLabel: (_, doc) => doc?.title as string,
+      generateURL: (docs) =>
+        docs.reduce((url, doc) => `${url}/${doc.slug}`.replace(/^\/+/, '/'), ''),
+    }),
   ],
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  // db: postgresAdapter({
-  //   pool: {
-  //     connectionString: process.env.POSTGRES_URI || ''
-  //   }
-  // }),
-  db: mongooseAdapter({
-    url: process.env.MONGODB_URI || '',
+  db: postgresAdapter({
+    pool: {
+      connectionString: process.env.POSTGRES_URI || '',
+    },
   }),
 
   /**
@@ -89,7 +42,44 @@ export default buildConfig({
     supportedLanguages: { en },
   },
 
+  localization: {
+    locales: [
+      {
+        label: 'العربية',
+        code: 'ar',
+        rtl: true,
+      },
+      {
+        label: 'Čeština',
+        code: 'cz',
+      },
+      {
+        label: 'Deutsch',
+        code: 'de',
+      },
+      {
+        label: 'English',
+        code: 'en',
+      },
+      {
+        label: 'Polski',
+        code: 'pl',
+      },
+      {
+        label: 'Русский',
+        code: 'ru',
+      },
+      {
+        label: 'Türkçe',
+        code: 'tr',
+      },
+    ],
+    defaultLocale: 'en',
+    fallback: true,
+  },
+
   admin: {
+    user: COLLECTION_SLUG_USER,
     autoLogin: {
       email: 'dev@payloadcms.com',
       password: 'test',
@@ -98,13 +88,13 @@ export default buildConfig({
   },
   async onInit(payload) {
     const existingUsers = await payload.find({
-      collection: 'users',
+      collection: 'user',
       limit: 1,
     })
 
     if (existingUsers.docs.length === 0) {
       await payload.create({
-        collection: 'users',
+        collection: 'user',
         data: {
           email: 'dev@payloadcms.com',
           password: 'test',
